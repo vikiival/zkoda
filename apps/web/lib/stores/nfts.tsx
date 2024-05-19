@@ -1,13 +1,18 @@
 import { PendingTransaction, UnsignedTransaction } from "@proto-kit/sequencer"
 import { CollectionId, InstanceId, Item, ItemId } from "chain/dist/nfts/lib"
-import { PublicKey, UInt32, UInt64 } from "o1js"
-import { useCallback, useEffect } from "react"
+import { HolderPublicOutput, HolderProof, message, isHolder } from "chain/dist/nfts/holder"
+import { Bool, MerkleMap, Nullifier, Poseidon, PrivateKey, Proof, PublicKey, UInt32, UInt64, Experimental } from "o1js"
+import { useCallback, useEffect } from "react"o
 import { create } from "zustand"
 import { immer } from "zustand/middleware/immer"
 import { useChainStore } from "./chain"
 import { Client, useClientStore } from "./client"
 import { useWalletStore } from "./wallet"
 import { sha256 } from "ohash";
+// import { Pickles } from "snarkyjs";
+import { Pickles } from "o1js/dist/node/snarky";
+import { dummyBase64Proof } from "o1js/dist/node/lib/proof_system";
+// type Pickles = Experimental.Callback;
 
 export interface ReadableItem {
   owner: string;
@@ -24,6 +29,7 @@ export interface NftsState {
   loadBalance: (client: Client, address: string) => Promise<void>;
   faucet: (client: Client, address: string) => Promise<PendingTransaction>;
   transfer: (client: Client, address: string, destination: string) => Promise<PendingTransaction>;
+  verify: (client: Client, address: string) => Promise<PendingTransaction>;
 }
 
 function isPendingTransaction(
@@ -101,6 +107,34 @@ export const useNftsStore = create<
 
       isPendingTransaction(tx.transaction);
       return tx.transaction;
+    },
+    async verify(client: Client, address: string) {
+      const nfts = client.runtime.resolve("Nfts");
+      const sender = PublicKey.fromBase58(address);
+      const map = new MerkleMap();
+      const key = Poseidon.hash(sender.toFields());
+      map.set(key, Bool(true).toField());
+    
+      const witness = map.getWitness(key);
+      const pk = PrivateKey.fromBase58('5FFG7GHAR2F2xCb5bqaLQrdgNGdtEL64tYgZimRBHDjuxVuA')
+
+      const nullifier = Nullifier.fromJSON(
+        Nullifier.createTestNullifier(message, pk)
+      );
+
+      const canHold = isHolder(witness, nullifier);
+
+      const proof = await mockProof(canHold);
+
+      const tx = await client.transaction(sender, () => {
+        nfts.verifyHolder(proof);
+      });
+
+      await tx.sign();
+      await tx.send();
+
+      isPendingTransaction(tx.transaction);
+      return tx.transaction;
     }
   })),
 );
@@ -153,6 +187,35 @@ export const useTransfer = () => {
   }, [client.client, wallet.wallet]);
 };
 
+async function mockProof(
+  publicOutput: HolderPublicOutput
+): Promise<HolderProof> {
+  const [, proof] = Pickles.proofOfBase64(await dummyBase64Proof(), 2);
+  return new HolderProof({
+    proof: proof,
+    maxProofsVerified: 2,
+    publicInput: undefined,
+    publicOutput,
+  });
+}
+
+export const useProof = () => {
+  const client = useClientStore();
+  const nfts = useNftsStore();
+  const wallet = useWalletStore();
+
+  return useCallback(async () => {
+    if (!client.client || !wallet.wallet) return;
+
+    const pendingTransaction = await nfts.verify(
+      client.client,
+      wallet.wallet,
+    );
+
+    wallet.addPendingTransaction(pendingTransaction);
+  }, [client.client, wallet.wallet]);
+};
+
 export const useValidate = () => {
   const client = useClientStore();
   const nfts = useNftsStore();
@@ -161,7 +224,7 @@ export const useValidate = () => {
   return useCallback(async () => {
     if (!client.client || !wallet.wallet) return;
 
-    const pendingTransaction = await nfts.faucet(
+    const pendingTransaction = await nfts.verify(
       client.client,
       wallet.wallet,
     );

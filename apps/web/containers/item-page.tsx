@@ -1,11 +1,11 @@
 "use client";
 import { Item } from "@/components/item";
-import { useFaucet, useNftsStore } from "@/lib/stores/nfts";
+import { useValidate, useNftsStore } from "@/lib/stores/nfts";
 import { useWalletStore } from "@/lib/stores/wallet";
 
 export default function Home() {
   const wallet = useWalletStore();
-  const drip = useFaucet();
+  const drip = useValidate();
   const nfts = useNftsStore();
 
   return (

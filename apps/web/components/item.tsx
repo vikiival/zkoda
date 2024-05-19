@@ -49,10 +49,10 @@ export function Item({
           type="submit"
           className="mt-6 w-full"
           loading={loading}
-          // onClick={() => {
-          //   wallet ?? onConnectWallet();
-          //   wallet && onDrip();
-          // }}
+          onClick={() => {
+            wallet ?? onConnectWallet();
+            wallet && onDrip();
+          }}
         >
           {wallet ? "Verify 🛂" : "Connect wallet"}
         </Button>

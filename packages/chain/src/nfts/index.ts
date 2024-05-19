@@ -96,7 +96,6 @@ export class Nfts extends NonFungibles<NftsConfig> {
     assert(isNullifierUsed.value.not(), "Nullifier is used");
 
     this.nullifiers.set(holderProof.publicOutput.nullifier, Bool(true));
-
   }
 
   // @runtimeMethod()
