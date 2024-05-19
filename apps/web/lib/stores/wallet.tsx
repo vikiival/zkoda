@@ -9,7 +9,7 @@ import truncateMiddle from "truncate-middle";
 import { usePrevious } from "@uidotdev/usehooks";
 import { useClientStore } from "./client";
 import { useChainStore } from "./chain";
-import { Bool, Field, PublicKey, Signature, UInt64 } from "o1js";
+import { Bool, Field, Nullifier, PublicKey, Signature, UInt64 } from "o1js";
 
 export interface WalletState {
   wallet?: string;
@@ -20,6 +20,7 @@ export interface WalletState {
   pendingTransactions: PendingTransaction[];
   addPendingTransaction: (pendingTransaction: PendingTransaction) => void;
   removePendingTransaction: (pendingTransaction: PendingTransaction) => void;
+  createNullifier: (message: any[]) => Promise<Nullifier | undefined>;
 }
 
 export const useWalletStore = create<WalletState, [["zustand/immer", never]]>(
@@ -71,6 +72,13 @@ export const useWalletStore = create<WalletState, [["zustand/immer", never]]>(
           return tx.hash().toString() !== pendingTransaction.hash().toString();
         });
       });
+    },
+    async createNullifier(message: any[]): Promise<Nullifier | undefined> {
+      const nullfier: Nullifier | undefined = await (mina as any)
+    ?.createNullifier({
+        message, // [1,2,3] // or ["1", "2", "3"]
+    }).catch((err: any) => err);
+      return nullfier;
     },
   })),
 );

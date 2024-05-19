@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { TestingAppChain } from "@proto-kit/sdk";
 import { PrivateKey } from "o1js";
 import { Nfts } from "../src/nfts";

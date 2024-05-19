@@ -21,8 +21,7 @@ export function Item({
   nft,
   loading,
 }: MinterProps) {
-  const form = useForm();
-  const hash = parseInt(nft?.metadata || '0' , 16) % 128
+  const hash = parseInt(nft?.metadata || '0' , 16) % 129
   const url = `https://dyndata.deno.dev/base/image/0xbbf5c72ac002f4f6e074c7ad47fd278deb5c740e/${hash}`
   return (
     <Card className="w-full p-4">

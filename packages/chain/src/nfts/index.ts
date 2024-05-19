@@ -77,6 +77,11 @@ export class Nfts extends NonFungibles<NftsConfig> {
   // }
 
   @runtimeMethod()
+  public setCommitment(commitment: Field) {
+    this.commitment.set(commitment);
+  }
+
+  @runtimeMethod()
   public verifyHolder(
     holderProof: HolderProof,
   ) {
